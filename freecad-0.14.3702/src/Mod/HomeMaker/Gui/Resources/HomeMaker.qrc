@@ -1,0 +1,7 @@
+<RCC version="1.0">
+    <qresource> 
+		<file>icons/HomeMaker_Open.svg</file>
+		<file>icons/HomeMaker_Edit.svg</file>
+		<file>icons/HomeMaker_Extrude.svg</file>
+    </qresource>
+</RCC> 
