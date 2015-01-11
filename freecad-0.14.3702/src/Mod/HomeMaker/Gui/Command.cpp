@@ -41,6 +41,7 @@
 #include <Base/Exception.h>
 #include <Base/Interpreter.h>
 #include <Base/Tools.h>
+#include <Base/Vector3D.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
 #include <Gui/MainWindow.h>
@@ -177,6 +178,27 @@ CmdHomeMakerExtrudeImage::CmdHomeMakerExtrudeImage()
 
 void CmdHomeMakerExtrudeImage::activated(int iMsg)
 {
+	std::vector<Base::Vector3d> list;
+	list.push_back(Base::Vector3d(-2.5, -2.5, 0.0));
+	list.push_back(Base::Vector3d(2.5, -2.5, 0.0));
+	list.push_back(Base::Vector3d(2.5, 0.0, 0.0));
+	list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
+	
+	doCommand(Doc, "App.activeDocument().addObject('Sketcher::SketchObject', '%s')", "GROUND");	
+	for(unsigned int i = 0; i < list.size() - 1; i++)
+		doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", "GROUND", list[i].x, list[i].y, list[i + 1].x, list[i + 1].y);
+	doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", "GROUND", list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);
+	commitCommand();
+	updateActive();
+	
+	openCommand("Make Pad");
+	doCommand(Doc, "App.activeDocument().addObject('PartDesign::Pad', '%s')", "GROUND_PAD");	
+	doCommand(Doc, "App.activeDocument().%s.Sketch = App.activeDocument().%s", "GROUND_PAD", "GROUND");
+	doCommand(Doc, "App.activeDocument().%s.Length = %f", "GROUND_PAD", 0.5);
+	
+	updateActive();
+	
+	
 	// Ajoutez le traitement pour extruder une image
 	Base::Console().Message("Extrude an image!\n");
 }
