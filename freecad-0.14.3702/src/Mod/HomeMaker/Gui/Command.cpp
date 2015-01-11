@@ -52,6 +52,9 @@
 //#include <Mod/Image/Gui/ImageView.h>
 
 
+void makeBox(std::string name, std::vector<Base::Vector3d> list, float height);
+std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vector3d end, int width, std::string align);
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //===========================================================================
@@ -185,7 +188,7 @@ void CmdHomeMakerExtrudeImage::activated(int iMsg)
 	list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
 
 	// makeBox("ground", list, 0.5);
-	makeBox("wall_1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0), Base::Vector3d(2.1, -2.5, 0), 0.4, "Right"), 5);
+	makeBox("wall_1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0), Base::Vector3d(2.1, -2.5, 0), 0.4, "Right"), 5.0);
 	
 	// prepare wall from line
 /*
@@ -220,15 +223,15 @@ void CreateHomeMakerCommands(void)
 }
 
 
-void makeBox(string name, std::vector<Base::Vector3d> list, float height)
+void makeBox(std::string name, std::vector<Base::Vector3d> list, float height)
 {
-	string sketchName = name + "_sketch";
-	string padName = name + "_pad";
+	std::string sketchName = name + "_sketch";
+	std::string padName = name + "_pad";
 	
 	doCommand(Doc, "App.activeDocument().addObject('Sketcher::SketchObject', '%s')", sketchName);	
 	for(unsigned int i = 0; i < list.size() - 1; i++)
 		doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName, list[i].x, list[i].y, list[i + 1].x, list[i + 1].y);
-	doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", "sketchName, list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);	
+	doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName, list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);	
 	
 	openCommand("Make Pad");
 	doCommand(Doc, "App.activeDocument().addObject('PartDesign::Pad', '%s')", padName);	
@@ -238,17 +241,17 @@ void makeBox(string name, std::vector<Base::Vector3d> list, float height)
 	updateActive();
 }
 
-std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vector3d end, int width, string align)
+std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vector3d end, float width, std::string align)
 {
 	std::vector<Base::Vector3d> list;
 
 	float m = (end.y - start.y) / (end.x - start.x);	
-	float coeff = (strcmp(align, "Center") == 0) ? coeff = width * 0.5 : width;
+	float coeff = (align.compare("Center") == 0) ? coeff = width * 0.5 : width;
 	
 	float xVectNorm = coeff * (-m);
 	float yVectNorm = coeff;
 	
-	if (strcmp(align, "Right") == 0)
+	if (align.compare("Right") == 0)
 	{
 		list.push_back(Base::Vector3d(start.x, start.y, 0.0));
 		list.push_back(Base::Vector3d(start.x + xVectNorm, start.y + yVectNorm, 0.0));
