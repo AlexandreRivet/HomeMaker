@@ -55,6 +55,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <math.h>
 
 // Xerces
 #include <xercesc/util/XercesDefs.hpp>

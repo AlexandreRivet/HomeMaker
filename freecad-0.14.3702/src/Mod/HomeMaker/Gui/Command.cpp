@@ -50,10 +50,8 @@
 
 //#include "../../Image/Gui/ImageOrientationDialog.h"
 //#include <Mod/Image/Gui/ImageView.h>
-
-
 void makeBox(std::string name, std::vector<Base::Vector3d> list, float height);
-std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vector3d end, int width, std::string align);
+std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vector3d end, float width, std::string align);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -181,34 +179,23 @@ CmdHomeMakerExtrudeImage::CmdHomeMakerExtrudeImage()
 
 void CmdHomeMakerExtrudeImage::activated(int iMsg)
 {
+	// Ajouter le traitement opencv ici et retourner un ground + une liste wall
+
+	// Ici un exemple de la manière dont on va créer la structure
 	std::vector<Base::Vector3d> list;
 	list.push_back(Base::Vector3d(-2.5, -2.5, 0.0));
 	list.push_back(Base::Vector3d(2.5, -2.5, 0.0));
-	list.push_back(Base::Vector3d(2.5, 0.0, 0.0));
+	list.push_back(Base::Vector3d(2.5, 2.5, 0.0));
 	list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
-
-	// makeBox("ground", list, 0.5);
-	makeBox("wall_1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0), Base::Vector3d(2.1, -2.5, 0), 0.4, "Right"), 5.0);
-	
-	// prepare wall from line
-/*
-	doCommand(Doc, "App.activeDocument().addObject('Sketcher::SketchObject', '%s')", "GROUND");	
-	for(unsigned int i = 0; i < list.size() - 1; i++)
-		doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", "GROUND", list[i].x, list[i].y, list[i + 1].x, list[i + 1].y);
-	doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", "GROUND", list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);
-	commitCommand();
-	updateActive();
-	
-	openCommand("Make Pad");
-	doCommand(Doc, "App.activeDocument().addObject('PartDesign::Pad', '%s')", "GROUND_PAD");	
-	doCommand(Doc, "App.activeDocument().%s.Sketch = App.activeDocument().%s", "GROUND_PAD", "GROUND");
-	doCommand(Doc, "App.activeDocument().%s.Length = %f", "GROUND_PAD", 0.5);
-	
-	updateActive();
-*/	
-	
-	// Ajoutez le traitement pour extruder une image
-	Base::Console().Message("Extrude an image!\n");
+	makeBox("ground", list, 0.5);
+	makeBox("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4, "Right"), 5.0);
+	makeBox("wall2", prepareWallFromLine(Base::Vector3d(2.5, -2.5, 0.0), Base::Vector3d(2.5, -0.3, 0.0), 0.4, "Right"), 5.0);
+	makeBox("wall3", prepareWallFromLine(Base::Vector3d(2.5, 0.5, 0.0), Base::Vector3d(2.5, 2.1, 0.0), 0.4, "Right"), 5.0);
+	makeBox("wall4", prepareWallFromLine(Base::Vector3d(2.5, 2.5, 0), Base::Vector3d(-2.1, 2.5, 0), 0.4, "Right"), 5.0);
+	makeBox("wall5", prepareWallFromLine(Base::Vector3d(-2.5, 2.5, 0), Base::Vector3d(-2.5, -2.1, 0), 0.4, "Right"), 5.0);
+	makeBox("wall6", prepareWallFromLine(Base::Vector3d(2.1, -0.3, 0), Base::Vector3d(-1.5, -0.3, 0), 0.4, "Right"), 5.0);
+	makeBox("wall7", prepareWallFromLine(Base::Vector3d(2.1, 0.9, 0), Base::Vector3d(0.3, 0.9, 0), 0.4, "Right"), 5.0);
+	makeBox("wall8", prepareWallFromLine(Base::Vector3d(-0.5, 0.9, 0), Base::Vector3d(-2.1, 0.9, 0), 0.4, "Right"), 5.0);
 }
 
 
@@ -225,39 +212,169 @@ void CreateHomeMakerCommands(void)
 
 void makeBox(std::string name, std::vector<Base::Vector3d> list, float height)
 {
-	std::string sketchName = name + "_sketch";
-	std::string padName = name + "_pad";
+	std::string sketchName = name + "Sketch";
+	std::string padName = name + "Pad";
 	
-	doCommand(Doc, "App.activeDocument().addObject('Sketcher::SketchObject', '%s')", sketchName);	
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('Sketcher::SketchObject', '%s')", sketchName.c_str());	
 	for(unsigned int i = 0; i < list.size() - 1; i++)
-		doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName, list[i].x, list[i].y, list[i + 1].x, list[i + 1].y);
-	doCommand(Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName, list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);	
+		Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName.c_str(), list[i].x, list[i].y, list[i + 1].x, list[i + 1].y);
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName.c_str(), list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);	
 	
-	openCommand("Make Pad");
-	doCommand(Doc, "App.activeDocument().addObject('PartDesign::Pad', '%s')", padName);	
-	doCommand(Doc, "App.activeDocument().%s.Sketch = App.activeDocument().%s", padName, "GROUND");
-	doCommand(Doc, "App.activeDocument().%s.Length = %f", padName, height);
+	Gui::Command::openCommand("Make Pad");
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('PartDesign::Pad', '%s')", padName.c_str());	
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Sketch = App.activeDocument().%s", padName.c_str(), sketchName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Length = %f", padName.c_str(), height);
 	
-	updateActive();
+	Gui::Command::updateActive();
 }
 
 std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vector3d end, float width, std::string align)
 {
 	std::vector<Base::Vector3d> list;
 
-	float m = (end.y - start.y) / (end.x - start.x);	
-	float coeff = (align.compare("Center") == 0) ? coeff = width * 0.5 : width;
-	
+	float m = 0.0f;
+	if (end.x != start.x)
+	{
+		if (end.y > start.y)
+			m = (end.y - start.y) / (end.x - start.x);
+		else if (end.y < start.y)
+			m = (start.y - end.y) / (start.x - end.x);
+	}
+
+	float offset = width / 2.0;
+	float coeff = offset / (sqrt((-m) * (-m) + 1));
+
 	float xVectNorm = coeff * (-m);
 	float yVectNorm = coeff;
-	
-	if (align.compare("Right") == 0)
+
+	if (start.x < end.x)
 	{
-		list.push_back(Base::Vector3d(start.x, start.y, 0.0));
-		list.push_back(Base::Vector3d(start.x + xVectNorm, start.y + yVectNorm, 0.0));
-		list.push_back(Base::Vector3d(end.x + xVectNorm, end.y + yVectNorm, 0.0));
-		list.push_back(Base::Vector3d(end.x, end.y, 0.0));		
-	}	
+		list.push_back(Base::Vector3d(start.x - xVectNorm, start.y - yVectNorm, start.z));
+		list.push_back(Base::Vector3d(start.x + xVectNorm, start.y + yVectNorm, start.z));
+		list.push_back(Base::Vector3d(end.x + xVectNorm, end.y + yVectNorm, end.z));
+		list.push_back(Base::Vector3d(end.x - xVectNorm, end.y - yVectNorm, end.z));
+	}
+	else if (start.x > end.x)
+	{
+		list.push_back(Base::Vector3d(end.x - xVectNorm, end.y - yVectNorm, end.z));
+		list.push_back(Base::Vector3d(end.x + xVectNorm, end.y + yVectNorm, end.z));
+		list.push_back(Base::Vector3d(start.x + xVectNorm, start.y + yVectNorm, start.z));		
+		list.push_back(Base::Vector3d(start.x - xVectNorm, start.y - yVectNorm, start.z));
+	}
+	else
+	{
+		if (start.y < end.y)
+		{
+			list.push_back(Base::Vector3d(end.x - offset, end.y, end.z));
+			list.push_back(Base::Vector3d(end.x + offset, end.y, end.z));
+			list.push_back(Base::Vector3d(start.x + offset, start.y, start.z));	
+			list.push_back(Base::Vector3d(start.x - offset, start.y, start.z));
+		}
+		else
+		{
+			list.push_back(Base::Vector3d(start.x - offset, start.y, start.z));
+			list.push_back(Base::Vector3d(start.x + offset, start.y, start.z));	
+			list.push_back(Base::Vector3d(end.x + offset, end.y, end.z));	
+			list.push_back(Base::Vector3d(end.x - offset, end.y, end.z));
+		}
+	}
+
+	if (align.compare("Left") == 0)
+	{
+		for(unsigned int i = 0; i < list.size(); i++)
+		{
+			if (start.x != end.x)
+			{
+				if (start.y < end.y)
+				{
+					if (start.x < end.x)
+					{
+						list[i].x += xVectNorm;
+						list[i].y += yVectNorm;
+					}
+					else
+					{
+						list[i].x -= xVectNorm;
+						list[i].y -= yVectNorm;
+					}					
+				}
+				else
+				{
+					if (start.x < end.x)
+					{
+						list[i].x -= xVectNorm;
+						list[i].y -= yVectNorm;
+					}
+					else
+					{
+						list[i].x += xVectNorm;
+						list[i].y += yVectNorm;
+					}
+				}
+			}
+			else
+			{
+				if (start.y < end.y)
+				{
+					list[i].x += offset;
+				}
+				else
+				{
+					list[i].x -= offset;
+				}
+			}
+		}
+	}
+	else if (align.compare("Right") == 0)
+	{
+		for(unsigned int i = 0; i < list.size(); i++)
+		{
+			if (start.x != end.x)
+			{
+				if (start.y < end.y)
+				{
+					if (start.x < end.x)
+					{
+						list[i].x -= xVectNorm;
+						list[i].y -= yVectNorm;
+					}
+					else
+					{
+						list[i].x += xVectNorm;
+						list[i].y += yVectNorm;
+					}					
+				}
+				else
+				{
+					if (start.x < end.x)
+					{
+						list[i].x += xVectNorm;
+						list[i].y += yVectNorm;
+					}
+					else
+					{
+						list[i].x -= xVectNorm;
+						list[i].y -= yVectNorm;
+					}
+				}
+			}
+			else
+			{
+				if (start.y < end.y)
+				{
+					list[i].x -= offset;
+				}
+				else
+				{
+					list[i].x += offset;
+				}				
+			}
+		}
+	}
+	else if (align.compare("Center") != 0)
+	{
+		// Cas d'erreur
+	}
 	
 	return list;
 }
