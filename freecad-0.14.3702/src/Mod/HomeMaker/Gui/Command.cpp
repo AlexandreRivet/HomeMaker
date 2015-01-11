@@ -188,14 +188,14 @@ void CmdHomeMakerExtrudeImage::activated(int iMsg)
 	list.push_back(Base::Vector3d(2.5, 2.5, 0.0));
 	list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
 	makeBox("ground", list, 0.5);
-	makeBox("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4, "Right"), 5.0);
-	makeBox("wall2", prepareWallFromLine(Base::Vector3d(2.5, -2.5, 0.0), Base::Vector3d(2.5, -0.3, 0.0), 0.4, "Right"), 5.0);
-	makeBox("wall3", prepareWallFromLine(Base::Vector3d(2.5, 0.5, 0.0), Base::Vector3d(2.5, 2.1, 0.0), 0.4, "Right"), 5.0);
-	makeBox("wall4", prepareWallFromLine(Base::Vector3d(2.5, 2.5, 0), Base::Vector3d(-2.1, 2.5, 0), 0.4, "Right"), 5.0);
-	makeBox("wall5", prepareWallFromLine(Base::Vector3d(-2.5, 2.5, 0), Base::Vector3d(-2.5, -2.1, 0), 0.4, "Right"), 5.0);
-	makeBox("wall6", prepareWallFromLine(Base::Vector3d(2.1, -0.3, 0), Base::Vector3d(-1.5, -0.3, 0), 0.4, "Right"), 5.0);
-	makeBox("wall7", prepareWallFromLine(Base::Vector3d(2.1, 0.9, 0), Base::Vector3d(0.3, 0.9, 0), 0.4, "Right"), 5.0);
-	makeBox("wall8", prepareWallFromLine(Base::Vector3d(-0.5, 0.9, 0), Base::Vector3d(-2.1, 0.9, 0), 0.4, "Right"), 5.0);
+	makeBox("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4f, "Right"), 5.0f);
+	makeBox("wall2", prepareWallFromLine(Base::Vector3d(2.5, -2.5, 0.0), Base::Vector3d(2.5, -0.3, 0.0), 0.4f, "Right"), 5.0f);
+	makeBox("wall3", prepareWallFromLine(Base::Vector3d(2.5, 0.5, 0.0), Base::Vector3d(2.5, 2.1, 0.0), 0.4f, "Right"), 5.0f);
+	makeBox("wall4", prepareWallFromLine(Base::Vector3d(2.5, 2.5, 0), Base::Vector3d(-2.1, 2.5, 0), 0.4f, "Right"), 5.0f);
+	makeBox("wall5", prepareWallFromLine(Base::Vector3d(-2.5, 2.5, 0), Base::Vector3d(-2.5, -2.1, 0), 0.4f, "Right"), 5.0f);
+	makeBox("wall6", prepareWallFromLine(Base::Vector3d(2.1, -0.3, 0), Base::Vector3d(-1.5, -0.3, 0), 0.4f, "Right"), 5.0f);
+	makeBox("wall7", prepareWallFromLine(Base::Vector3d(2.1, 0.9, 0), Base::Vector3d(0.3, 0.9, 0), 0.4f, "Right"), 5.0f);
+	makeBox("wall8", prepareWallFromLine(Base::Vector3d(-0.5, 0.9, 0), Base::Vector3d(-2.1, 0.9, 0), 0.4f, "Right"), 5.0f);
 }
 
 
@@ -232,6 +232,7 @@ std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vect
 {
 	std::vector<Base::Vector3d> list;
 
+	// Calcul du coefficient directeur
 	float m = 0.0f;
 	if (end.x != start.x)
 	{
@@ -241,36 +242,37 @@ std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vect
 			m = (start.y - end.y) / (start.x - end.x);
 	}
 
+	// Calcul de la droite normale
 	float offset = width / 2.0;
 	float coeff = offset / (sqrt((-m) * (-m) + 1));
-
 	float xVectNorm = coeff * (-m);
 	float yVectNorm = coeff;
 
-	if (start.x < end.x)
+	
+	if (start.x < end.x)								// Si le x du start est plus petit que le x du end, on crée dans un sens le rectangle et on se réfère à la normale
 	{
 		list.push_back(Base::Vector3d(start.x - xVectNorm, start.y - yVectNorm, start.z));
 		list.push_back(Base::Vector3d(start.x + xVectNorm, start.y + yVectNorm, start.z));
 		list.push_back(Base::Vector3d(end.x + xVectNorm, end.y + yVectNorm, end.z));
 		list.push_back(Base::Vector3d(end.x - xVectNorm, end.y - yVectNorm, end.z));
 	}
-	else if (start.x > end.x)
+	else if (start.x > end.x)							// Sinon on parcourt dans l'autre sens
 	{
 		list.push_back(Base::Vector3d(end.x - xVectNorm, end.y - yVectNorm, end.z));
 		list.push_back(Base::Vector3d(end.x + xVectNorm, end.y + yVectNorm, end.z));
 		list.push_back(Base::Vector3d(start.x + xVectNorm, start.y + yVectNorm, start.z));		
 		list.push_back(Base::Vector3d(start.x - xVectNorm, start.y - yVectNorm, start.z));
 	}
-	else
+	else												// Sinon on se réfère à l'offset
 	{
-		if (start.y < end.y)
+		if (start.y < end.y)							// Si le y du start est plus petit que le y du end, on crée dans un sens le rectangle
 		{
 			list.push_back(Base::Vector3d(end.x - offset, end.y, end.z));
 			list.push_back(Base::Vector3d(end.x + offset, end.y, end.z));
 			list.push_back(Base::Vector3d(start.x + offset, start.y, start.z));	
 			list.push_back(Base::Vector3d(start.x - offset, start.y, start.z));
 		}
-		else
+		else											// Sinon on parcourt dans l'autre sens
 		{
 			list.push_back(Base::Vector3d(start.x - offset, start.y, start.z));
 			list.push_back(Base::Vector3d(start.x + offset, start.y, start.z));	
@@ -279,6 +281,7 @@ std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vect
 		}
 	}
 
+	// Gestion des align (NB: Par défaut, c'est Center)
 	if (align.compare("Left") == 0)
 	{
 		for(unsigned int i = 0; i < list.size(); i++)
