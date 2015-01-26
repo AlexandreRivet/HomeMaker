@@ -180,14 +180,16 @@ CmdHomeMakerExtrudeImage::CmdHomeMakerExtrudeImage()
 void CmdHomeMakerExtrudeImage::activated(int iMsg)
 {
 	// Ajouter le traitement opencv ici et retourner un ground + une liste wall
-
+	
 	// Ici un exemple de la manière dont on va créer la structure
 	std::vector<Base::Vector3d> list;
 	list.push_back(Base::Vector3d(-2.5, -2.5, 0.0));
 	list.push_back(Base::Vector3d(2.5, -2.5, 0.0));
 	list.push_back(Base::Vector3d(2.5, 2.5, 0.0));
 	list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
-	makeBox("ground", list, 0.5);
+	
+	makeExtrude("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4f, "Right"), 5.0f);
+	/*makeBox("ground", list, 0.5);
 	makeBox("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4f, "Right"), 5.0f);
 	makeBox("wall2", prepareWallFromLine(Base::Vector3d(2.5, -2.5, 0.0), Base::Vector3d(2.5, -0.3, 0.0), 0.4f, "Right"), 5.0f);
 	makeBox("wall3", prepareWallFromLine(Base::Vector3d(2.5, 0.5, 0.0), Base::Vector3d(2.5, 2.1, 0.0), 0.4f, "Right"), 5.0f);
@@ -195,7 +197,7 @@ void CmdHomeMakerExtrudeImage::activated(int iMsg)
 	makeBox("wall5", prepareWallFromLine(Base::Vector3d(-2.5, 2.5, 0), Base::Vector3d(-2.5, -2.1, 0), 0.4f, "Right"), 5.0f);
 	makeBox("wall6", prepareWallFromLine(Base::Vector3d(2.1, -0.3, 0), Base::Vector3d(-1.5, -0.3, 0), 0.4f, "Right"), 5.0f);
 	makeBox("wall7", prepareWallFromLine(Base::Vector3d(2.1, 0.9, 0), Base::Vector3d(0.3, 0.9, 0), 0.4f, "Right"), 5.0f);
-	makeBox("wall8", prepareWallFromLine(Base::Vector3d(-0.5, 0.9, 0), Base::Vector3d(-2.1, 0.9, 0), 0.4f, "Right"), 5.0f);
+	makeBox("wall8", prepareWallFromLine(Base::Vector3d(-0.5, 0.9, 0), Base::Vector3d(-2.1, 0.9, 0), 0.4f, "Right"), 5.0f);*/
 }
 
 
@@ -208,7 +210,28 @@ void CreateHomeMakerCommands(void)
 	rcCmdMgr.addCommand(new CmdHomeMakerEditImage());
 	rcCmdMgr.addCommand(new CmdHomeMakerExtrudeImage());
 }
-
+void makeExtrude(std::string name, std::vector<Base::Vector3d> list, float height)
+{
+	std::string sketchName = name + "Sketch";
+	std::string extrudeName = name + "Pad";
+	
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('Sketcher::SketchObject', '%s')", sketchName.c_str());	
+	for(unsigned int i = 0; i < list.size() - 1; i++)
+		Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName.c_str(), list[i].x, list[i].y, list[i + 1].x, list[i + 1].y);
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName.c_str(), list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);	
+	
+	Gui::Command::openCommand("Make Extrude");
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('PartDesign::Extrusion', '%s')", extrudeName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Base = App.activeDocument().%s", extrudeName.c_str(), sketchName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Dir = (0,0,%f)", extrudeName.c_str(), height);
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Solid =(True)", extrudeName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.TaperAngle = (0)", extrudeName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Sketch = App.activeDocument().%s", extrudeName.c_str(), sketchName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Visibility = False", sketchName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Label = '%s'", extrudeName.c_str(), extrudeName.c_str());
+	
+	Gui::Command::updateActive();
+}
 
 void makeBox(std::string name, std::vector<Base::Vector3d> list, float height)
 {
