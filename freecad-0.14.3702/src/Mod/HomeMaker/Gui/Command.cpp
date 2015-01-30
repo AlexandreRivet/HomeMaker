@@ -51,6 +51,8 @@
 //#include "../../Image/Gui/ImageOrientationDialog.h"
 //#include <Mod/Image/Gui/ImageView.h>
 void makeBox(std::string name, std::vector<Base::Vector3d> list, float height);
+void makeExtrude(std::string name, std::vector<Base::Vector3d> list, float height);
+void makeBooleanOperation(std::string extrudeName1, std::string extrudeName2, std::string operation);
 std::vector<Base::Vector3d> prepareWallFromLine(Base::Vector3d start, Base::Vector3d end, float width, std::string align);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -180,15 +182,35 @@ CmdHomeMakerExtrudeImage::CmdHomeMakerExtrudeImage()
 void CmdHomeMakerExtrudeImage::activated(int iMsg)
 {
 	// Ajouter le traitement opencv ici et retourner un ground + une liste wall
-	
+	// Normalement le traitement opencv devra retourner => vector< vector<Point> > contours
+
+	/*
+	std::vector<Point> contour_1;
+	contour_1.push_back(Point(0, 0));
+	contour_1.push_back(Point(0, 0));
+	contour_1.push_back(Point(0, 0));
+	contour_1.push_back(Point(0, 0));
+
+	std::vector<Point> contour_2;
+	contour_2.push_back(Point(0, 0));
+	contour_2.push_back(Point(0, 0));
+	contour_2.push_back(Point(0, 0));
+	contour_2.push_back(Point(0, 0));
+
+	std::vector< vector<Point> > contours;
+	contours.push_back(contour_1);
+	contours.push_back(contour_2);
+	*/
 	// Ici un exemple de la manière dont on va créer la structure
-	std::vector<Base::Vector3d> list;
-	list.push_back(Base::Vector3d(-2.5, -2.5, 0.0));
-	list.push_back(Base::Vector3d(2.5, -2.5, 0.0));
-	list.push_back(Base::Vector3d(2.5, 2.5, 0.0));
-	list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
+	// std::vector<Base::Vector3d> list;
+	// list.push_back(Base::Vector3d(-2.5, -2.5, 0.0));
+	// list.push_back(Base::Vector3d(2.5, -2.5, 0.0));
+	// list.push_back(Base::Vector3d(2.5, 2.5, 0.0));
+	// list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
 	
-	makeExtrude("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4f, "Right"), 5.0f);
+	makeExtrude("ext1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 2.5f, "Right"), 5.0f);
+	makeExtrude("ext2", prepareWallFromLine(Base::Vector3d(-1.0, -1.0, 0.0), Base::Vector3d(1.0, -1.0, 0.0), 0.4f, "Right"), 5.0f);
+	makeBooleanOperation("ext1Extrude", "ext2Extrude", "Cut");
 	/*makeBox("ground", list, 0.5);
 	makeBox("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4f, "Right"), 5.0f);
 	makeBox("wall2", prepareWallFromLine(Base::Vector3d(2.5, -2.5, 0.0), Base::Vector3d(2.5, -0.3, 0.0), 0.4f, "Right"), 5.0f);
@@ -210,10 +232,25 @@ void CreateHomeMakerCommands(void)
 	rcCmdMgr.addCommand(new CmdHomeMakerEditImage());
 	rcCmdMgr.addCommand(new CmdHomeMakerExtrudeImage());
 }
+
+void makeBooleanOperation(std::string extrudeName1, std::string extrudeName2, std::string operation)
+{
+	Gui::Command::openCommand("Make Boolean Operation");
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('Part::Cut', '%s')", operation.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Base = App.activeDocument().%s", operation.c_str(), extrudeName1.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Tool = App.activeDocument().%s", operation.c_str(), extrudeName2.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "Gui.activeDocument().hide('%s')", extrudeName1.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "Gui.activeDocument().hide('%s')", extrudeName2.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "Gui.activeDocument().%s.ShapeColor = Gui.activeDocument().%s.ShapeColor", operation.c_str(), extrudeName1.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "Gui.activeDocument().%s.DisplayMode = Gui.activeDocument().%s.DisplayMode", operation.c_str(), extrudeName1.c_str());
+
+	Gui::Command::updateActive();
+}
+
 void makeExtrude(std::string name, std::vector<Base::Vector3d> list, float height)
 {
 	std::string sketchName = name + "Sketch";
-	std::string extrudeName = name + "Pad";
+	std::string extrudeName = name + "Extrude";
 	
 	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('Sketcher::SketchObject', '%s')", sketchName.c_str());	
 	for(unsigned int i = 0; i < list.size() - 1; i++)
@@ -221,13 +258,13 @@ void makeExtrude(std::string name, std::vector<Base::Vector3d> list, float heigh
 	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.addGeometry(Part.Line(App.Vector(%f, %f, 0), App.Vector(%f, %f, 0)))", sketchName.c_str(), list[0].x, list[0].y, list[list.size() - 1].x, list[list.size() - 1].y);	
 	
 	Gui::Command::openCommand("Make Extrude");
-	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('PartDesign::Extrusion', '%s')", extrudeName.c_str());
+	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().addObject('Part::Extrusion', '%s')", extrudeName.c_str());
 	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Base = App.activeDocument().%s", extrudeName.c_str(), sketchName.c_str());
 	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Dir = (0,0,%f)", extrudeName.c_str(), height);
 	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Solid =(True)", extrudeName.c_str());
 	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.TaperAngle = (0)", extrudeName.c_str());
-	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Sketch = App.activeDocument().%s", extrudeName.c_str(), sketchName.c_str());
-	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Visibility = False", sketchName.c_str());
+	// Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Sketch = App.activeDocument().%s", extrudeName.c_str(), sketchName.c_str());
+	// Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Visibility = False", sketchName.c_str());
 	Gui::Command::doCommand(Gui::Command::Doc, "App.activeDocument().%s.Label = '%s'", extrudeName.c_str(), extrudeName.c_str());
 	
 	Gui::Command::updateActive();
