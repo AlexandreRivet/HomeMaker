@@ -34,6 +34,12 @@
 #include <time.h>
 #include <sys/timeb.h>
 
+#include <string.h>
+#include <iostream>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+
 // A enlever lorsque toutes les traitements auront été ajouté pour les commandes
 
 #include <Base/Console.h>
@@ -47,6 +53,13 @@
 #include <Gui/MainWindow.h>
 #include <Gui/Command.h>
 #include <Gui/BitmapFactory.h>
+
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/core/core.hpp"
+
+using namespace cv;
+using namespace std;
 
 //#include "../../Image/Gui/ImageOrientationDialog.h"
 //#include <Mod/Image/Gui/ImageView.h>
@@ -123,6 +136,7 @@ void CmdHomeMakerOpenImage::activated(int iMsg)
 			*/
 			Command::doCommand(Command::Gui, "import Image, ImageGui");
 			Command::doCommand(Command::Gui, "ImageGui.open(\"%s\")", (const char*)s.toUtf8());
+			Base::Console().Message((const char*)s.toUtf8());
 		}
 		catch (const Base::PyException& e)
 		{
@@ -181,48 +195,62 @@ CmdHomeMakerExtrudeImage::CmdHomeMakerExtrudeImage()
 
 void CmdHomeMakerExtrudeImage::activated(int iMsg)
 {
-	// Ajouter le traitement opencv ici et retourner un ground + une liste wall
-	// Normalement le traitement opencv devra retourner => vector< vector<Point> > contours
-
-	/*
-	std::vector<Point> contour_1;
-	contour_1.push_back(Point(0, 0));
-	contour_1.push_back(Point(0, 0));
-	contour_1.push_back(Point(0, 0));
-	contour_1.push_back(Point(0, 0));
-
-	std::vector<Point> contour_2;
-	contour_2.push_back(Point(0, 0));
-	contour_2.push_back(Point(0, 0));
-	contour_2.push_back(Point(0, 0));
-	contour_2.push_back(Point(0, 0));
-
-	std::vector< vector<Point> > contours;
-	contours.push_back(contour_1);
-	contours.push_back(contour_2);
-	*/
-	// Ici un exemple de la manière dont on va créer la structure
-	// std::vector<Base::Vector3d> list;
-	// list.push_back(Base::Vector3d(-2.5, -2.5, 0.0));
-	// list.push_back(Base::Vector3d(2.5, -2.5, 0.0));
-	// list.push_back(Base::Vector3d(2.5, 2.5, 0.0));
-	// list.push_back(Base::Vector3d(-2.5, 2.5, 0.0));
-	
+	// Zone de tests de fonctions
 	makeExtrude("ext1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 2.5f, "Right"), 5.0f);
 	makeExtrude("ext2", prepareWallFromLine(Base::Vector3d(-1.0, -1.0, 0.0), Base::Vector3d(1.0, -1.0, 0.0), 0.4f, "Right"), 5.0f);
 	makeBooleanOperation("ext1Extrude", "ext2Extrude", "Cut");
-	/*makeBox("ground", list, 0.5);
-	makeBox("wall1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 0.4f, "Right"), 5.0f);
-	makeBox("wall2", prepareWallFromLine(Base::Vector3d(2.5, -2.5, 0.0), Base::Vector3d(2.5, -0.3, 0.0), 0.4f, "Right"), 5.0f);
-	makeBox("wall3", prepareWallFromLine(Base::Vector3d(2.5, 0.5, 0.0), Base::Vector3d(2.5, 2.1, 0.0), 0.4f, "Right"), 5.0f);
-	makeBox("wall4", prepareWallFromLine(Base::Vector3d(2.5, 2.5, 0), Base::Vector3d(-2.1, 2.5, 0), 0.4f, "Right"), 5.0f);
-	makeBox("wall5", prepareWallFromLine(Base::Vector3d(-2.5, 2.5, 0), Base::Vector3d(-2.5, -2.1, 0), 0.4f, "Right"), 5.0f);
-	makeBox("wall6", prepareWallFromLine(Base::Vector3d(2.1, -0.3, 0), Base::Vector3d(-1.5, -0.3, 0), 0.4f, "Right"), 5.0f);
-	makeBox("wall7", prepareWallFromLine(Base::Vector3d(2.1, 0.9, 0), Base::Vector3d(0.3, 0.9, 0), 0.4f, "Right"), 5.0f);
-	makeBox("wall8", prepareWallFromLine(Base::Vector3d(-0.5, 0.9, 0), Base::Vector3d(-2.1, 0.9, 0), 0.4f, "Right"), 5.0f);*/
+	
+	// Traitement opencv + extrude/cut
+	Mat src_gray;
+	Mat dst;
+	std::vector< vector<Point> > contours;
+	
+	Mat src = imread("C:/Users/Alexandre/Desktop/plan_bis.png"); // TODO: Comprendre le problème de chargement
+	if(!src.data)
+	{
+		Base::Console().Message("Image file not found!\n");
+		return;
+	}
+
+	// Traitement opencv pour trouver les contours
+	cvtColor(src, src_gray, CV_BGR2GRAY);
+	threshold(src_gray, dst, 127, 255, 0);
+	findContours(dst, contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));	
+
+	// Conversion des contours en liste de Vector3D
+	std::vector< vector<Base::Vector3d> > elements;
+	for(unsigned int i = 1; i < contours.size(); ++i)
+	{
+		std::vector<Point> currentContour = contours[i];
+		std::vector<Base::Vector3d> tmp;
+		for (unsigned int j = 0; j < currentContour.size(); ++j)
+		{
+			Point p = currentContour[j];
+			tmp.push_back(Base::Vector3d(p.x, p.y, 0));
+		}
+		elements.push_back(tmp);
+	}
+
+	// Extrude du contour principal
+	if (elements.size() > 0)
+		makeExtrude("base", elements[0], 5.0f);
+
+	// Extrude des autres contours et cut operation avec le principal
+	std::string name = "ext";
+	for (unsigned int i = 1; i < elements.size(); ++i)
+	{
+		std::stringstream sstm;
+		sstm << name << i;
+		makeExtrude(sstm.str(), elements[i], 5.0f);
+		makeBooleanOperation("baseExtrude", sstm.str() + "Extrude", "Cut");
+	}
+
+	/* Zone de tests de fonctions
+	makeExtrude("ext1", prepareWallFromLine(Base::Vector3d(-2.5, -2.5, 0.0), Base::Vector3d(2.1, -2.5, 0.0), 2.5f, "Right"), 5.0f);
+	makeExtrude("ext2", prepareWallFromLine(Base::Vector3d(-1.0, -1.0, 0.0), Base::Vector3d(1.0, -1.0, 0.0), 0.4f, "Right"), 5.0f);
+	makeBooleanOperation("ext1Extrude", "ext2Extrude", "Cut");
+	*/
 }
-
-
 
 void CreateHomeMakerCommands(void)
 {
